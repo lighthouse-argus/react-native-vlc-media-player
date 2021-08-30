@@ -84,6 +84,7 @@ static NSString *const playbackRate = @"rate";
     }
 }
 
+
 -(void)setResume:(BOOL)autoplay
 {
     if(_player){
@@ -91,7 +92,8 @@ static NSString *const playbackRate = @"rate";
     }
     // [bavv edit start]
     NSString* uri    = [_source objectForKey:@"uri"];
-    NSURL* _uri    = [NSURL URLWithString:uri];
+    NSURL* _uri    = [NSURL URLWithString:uri
+    NSString* youTubeURL = @"https://www.youtube.com/watch?v=";
     NSDictionary* initOptions = [_source objectForKey:@"initOptions"];
 
     _player = [[VLCMediaPlayer alloc] init];
@@ -121,32 +123,32 @@ static NSString *const playbackRate = @"rate";
     }
     _source = source;
     // [bavv edit start]
+    // NSArray *options = [NSArray arrayWithObject:@"--rtsp-tcp"];
     NSString* uri    = [source objectForKey:@"uri"];
-    BOOL    autoplay = [RCTConvert BOOL:[source objectForKey:@"autoplay"]];
-    NSURL* _uri    = [NSURL URLWithString:uri];
-    NSDictionary* initOptions = [source objectForKey:@"initOptions"];
-
-    _player = [[VLCMediaPlayer alloc] init];
-    // [bavv edit end]
-
-    [_player setDrawable:self];
-    _player.delegate = self;
-    _player.scaleFactor = 0;
-
-    VLCMedia *media = [VLCMedia mediaWithURL:_uri];
-
-    for (NSString* option in initOptions) {
-        [media addOption:[option stringByReplacingOccurrencesOfString:@"--" withString:@""]];
+    NSString* youTubeURL = @"https://www.youtube.com/watch?v=";
+    if([uri containsString:youTubeURL]){
+        NSString* videoId = [uri stringByReplacingOccurrencesOfString:youTubeURL withString:@""];
+        NSLog(@"videoId %@", videoId);
+        [[XCDYouTubeClient defaultClient] getVideoWithIdentifier:videoId completionHandler:^(XCDYouTubeVideo * _Nullable video, NSError * _Nullable error) {
+            if (video)
+            {
+                NSDictionary *streamURLs = video.streamURLs;
+                NSURL *streamURL = streamURLs[XCDYouTubeVideoQualityHTTPLiveStreaming] ?: streamURLs[@(XCDYouTubeVideoQualityHD720)] ?: streamURLs[@(XCDYouTubeVideoQualityMedium360)] ?: streamURLs[@(XCDYouTubeVideoQualitySmall240)];
+                [self setSourceURL:streamURL source:source];
+            }
+            else
+            {
+                self.onVideoError(@{
+                                    @"target": self.reactTag
+                                    });
+                [self _release];
+            }
+        }];
     }
-
-    _player.media = media;
-    [[AVAudioSession sharedInstance] setActive:NO withOptions:AVAudioSessionSetActiveOptionNotifyOthersOnDeactivation error:nil];
-    NSLog(@"autoplay: %i",autoplay);
-    self.onVideoLoadStart(@{
-                           @"target": self.reactTag
-                           });
-//    if(autoplay)
-        [self play];
+    else {
+        NSURL* _uri    = [NSURL URLWithString:uri];
+        [self setSourceURL:_uri source:source];
+    }
 }
 
 - (void)mediaPlayerTimeChanged:(NSNotification *)aNotification
