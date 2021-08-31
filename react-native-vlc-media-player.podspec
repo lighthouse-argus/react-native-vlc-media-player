@@ -12,5 +12,4 @@ Pod::Spec.new do |s|
   s.static_framework = true
   s.dependency 'React'
   s.dependency 'MobileVLCKit', '3.3.17'
-  s.dependency 'XCDYouTubeKit', :git => 'https://github.com/armendh/XCDYouTubeKit', :branch => 'master', :commit => '651a6a51c695c5819eb51ba2f98d0b64094315b9'
 end
